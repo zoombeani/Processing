@@ -1,0 +1,229 @@
+/***************
+
+  Fractal Starfish
+  Zoombeani
+  Tumblr https://zoombeani.tumblr.com/post/183912108365
+  Instagram https://www.instagram.com/p/Bvwy_kIjxoA/
+  Rev 02-Apr-2019
+  Org 28-Mar-2019
+
+***************/
+
+int[][] result;
+float t;
+
+int samplesPerFrame = 16;     //for mode 2,3
+float shutterAngle = .5;      //for mode 2,3
+int numFrames = 180;           //for mode 2,3
+boolean gif=false;             //True: gifs are rendered at ~33 fps,
+                              //  eg gifLength * 33 = numFrames
+                              //False: mp4/ pngs are rendered at 33 fps,
+                              //  eg mp4Length * 33 = numFrames
+
+int mode = 1; //Mouse press for fine tune with mouseX
+              //1  for preview animation
+              //2  for preview animation with Bees and Bombs renderer
+              //3  for render to image with Bees and Bombs
+
+
+float test,w, h, sc,hm=0.;
+PShape zLogo;
+int ni=7,nj=5;
+int[] rs = new int[ni*ni+nj];
+
+color warm=color( 40  ,40,100),
+      cool=color(223.5,40,100),
+tumblrBlue=#36465D;
+float blue=223.5,
+     green=142.6,
+      back=20,
+     front=340;
+int numCols=80;
+
+void settings() {
+  if(gif) size(540,540,P2D);
+  else size(720,720,P2D);
+  smooth(8);
+}
+
+void setup() {  
+  w=width/2.0f;
+  h=height/2.0f;
+
+  colorMode(HSB,360,100,100,100);
+  noStroke();
+  stroke(front);
+  strokeWeight(2);
+  noFill();
+  fill(front);
+  
+  for(int i=0;i<ni*ni+nj;i++){
+    rs[i]=int(random(20000));
+  }
+
+  //if(!gif){zLogo=loadShape("Z.svg");}
+
+  if(mode==2 || mode==3) result = new int[width*height][3];
+
+}
+
+void draw() {
+  getRenderer();
+}
+
+void draw_(){
+  //test=map(mouseY,0,height,0,10);
+  //println(test);
+  
+  pushMatrix();
+  background(back);
+
+  translate(w,h);
+  
+  int nk=4;
+  for(int k=0;k<nk;k++){
+    pushMatrix();
+    sc=width/540.0f;
+    sc*=map(k,0,nk-1,2.9,1);
+    scale(sc);
+    pushStyle();
+    noStroke();
+    fill(back,60);
+    rect(-w,-h,2.*w,2.*h);
+    popStyle();
+    
+    rotate(TAU/float(ni)*t);
+    
+    float r0=80,r1=10,x=0,y=0;
+    float r=r0+r1*sin(t*TAU);
+    
+    float hsh=160+hm+t*360;
+    hsh=hsh%360;
+    hsh=gcol(hsh);
+    fill(hsh,100,100);
+    ellipse(0,0,r,r);
+    
+    //int nj=4;
+    for(int i=0;i<ni;i++){
+      r=r0+r1*sin(t*TAU);
+      x=0;
+      y=0;
+      
+      for(int j=0;j<nj;j++){
+        randomSeed(rs[i*ni+j]);
+        
+        float pp=map(j,0,nj,.11,.5);
+        float e=1+2.4*sin(PI*norm(i,0,ni)); //random(.8,2.2)
+        float phi=pp*PI*sin(TAU*ease(t,e));
+        phi+=norm(i,0,ni)*TAU;
+        phi+=norm(k,0,nk)*TAU;
+        phi=phi%TAU; 
+        
+        float rp=r;
+        x+=.75*rp*cos(phi);
+        y+=.75*rp*sin(phi);
+        r=r0/pow(2,j+1)+r1/pow(2,j+1)*sin(t*TAU);
+        
+        float h=map(j,-1,nj,0,160)+hsh;
+        h=h%360;
+        h=gcol(h);
+        fill(h,100,100);
+        ellipse(x,y,r,r);
+      }
+    }
+    popMatrix();
+  }
+  
+  popMatrix();
+
+  /*if(!gif){
+    if(mode==4 || mode ==5){}
+    else{shape(zLogo,0,0,sc*zLogo.width,sc*zLogo.height);}
+  }*/
+}
+
+//))) Set Colours
+float gcol(float x){
+  float sh=0;
+  
+  //float col=map(mag(x,y),0,1.1*sqrt(2)*w,0,360);
+  //col=(col+sh);
+  //col=col%360;
+  float col=int(map(x,0,360,0,numCols))*360/float(numCols);
+  return col;
+}//)))
+
+//### Easing formulas
+float ease(float p) {                          //courtesy of patakk> Bees & Bombs
+  return 3*pow(p,2) - 2*pow(p,3); 
+} float ease(float p, float g) {               //courtesy of patakk> Bees & Bombs
+  if (p < 0.5) return 0.5 * pow(2*p, g); 
+  else return 1 - 0.5 * pow(2*(1 - p), g); 
+} float ease(float p, float g, float h) {      //courtesy of metaglitch, g is ease at beginning of motion,
+    return (1-p)*ease(p, g) + p*ease(p, h);    //h is ease at completion of motion
+}//###
+
+//%%% Get time from 0 to 1 for looping animations using a choice of renderers
+void getRenderer(){
+  if (mousePressed && (mode==1 || mode==2)) {     //Fine tune with mouse
+    t = mouseX*1.0/width; //Thank you metaglitch
+    t=constrain(t,0,1);
+    t=t%1;
+    draw_();
+//    hm+=1;
+//    hm=hm%360;
+//    t+=0.0025;            //idea courtesy of metaglitch)
+//    if(t>=1.) t=0;
+  } else if(mode==1) {    //Preview animation loop
+    draw_();              //(Implemented by Zoombeani,
+    t+=0.0025;            //idea courtesy of metaglitch)
+    if(t>=1.) t=0;        //Larger step = faster animation
+  } else if(mode==2) {    //Get time for preview of Bees and Bombs render
+    renderbb();
+    if(t>=1.) frameCount=0;
+  } else if(mode==3){     //Get time and render with Bees and Bombs renderer
+    renderbb();    
+    if(gif) saveFrame("gif/f###.gif");
+    else{
+      saveFrame("png/f###.png");
+      /*if(frameCount<5){
+        frameCount=frameCount+numFrames;
+        saveFrame("png/f###.png");
+        frameCount=frameCount-numFrames;
+      }*/
+    }
+    if (frameCount==numFrames) exit();
+  }
+}//%%%
+
+//~~~ Bees and Bombs Renderer
+void renderbb(){
+  for (int i=0; i<width*height; i++) for (int a=0; a<3; a++) result[i][a] = 0;
+  for (int sa=0; sa<samplesPerFrame; sa++) {
+    t = map(frameCount-1 + sa*shutterAngle/samplesPerFrame, 0, numFrames, 0, 1.);
+    draw_();
+    loadPixels();
+    for (int i=0; i<pixels.length; i++) {
+      result[i][0] += pixels[i] >> 16 & 0xff;
+      result[i][1] += pixels[i] >> 8 & 0xff;
+      result[i][2] += pixels[i] & 0xff;
+    }
+  }
+  loadPixels();
+  for (int i=0; i<pixels.length; i++)
+    pixels[i] = 0xff << 24 |
+      int(result[i][0]*1.0/samplesPerFrame) << 16 | 
+      int(result[i][1]*1.0/samplesPerFrame) << 8 | 
+      int(result[i][2]*1.0/samplesPerFrame);
+  updatePixels(); 
+}//~~~
+
+
+void keyPressed(){
+  if(key=='R' || key=='r') saveFrame("f#####.png");
+  if(key=='X' || key=='x') setup();
+}
+
+void onBackPressed(){
+  setup();
+}
